@@ -1,14 +1,19 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import * as faceapi from '@vladmandic/face-api';
-import { CheckCircle2, Camera } from 'lucide-react';
+import { CheckCircle2, Camera, User } from 'lucide-react';
 
 const FaceRecognition = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const modelsLoaded = useRef(false);
   const detectionIntervalRef = useRef(null);
+  const drawIntervalRef = useRef(null);
   const lastDetectionTimeRef = useRef(0);
+  const startFaceDetectionRef = useRef(null);
+  const referenceFacesRef = useRef([]);
+  const hasVerifiedRef = useRef(false);
+  const lastDetectionsRef = useRef(null);
   
   const [status, setStatus] = useState("Initializing face detection...");
   const [isPopupVisible, setPopupVisible] = useState(false);
@@ -22,6 +27,15 @@ const FaceRecognition = () => {
   const [bestMatchImage, setBestMatchImage] = useState(null);
   const [faceDetected, setFaceDetected] = useState(false);
   const [hasVerified, setHasVerified] = useState(false);
+
+  // Sync refs with state to avoid stale closures
+  useEffect(() => {
+    referenceFacesRef.current = referenceFaces;
+  }, [referenceFaces]);
+
+  useEffect(() => {
+    hasVerifiedRef.current = hasVerified;
+  }, [hasVerified]);
 
   useEffect(() => {
     let isMounted = true;
@@ -88,29 +102,23 @@ const FaceRecognition = () => {
     const checkFaceQuality = (detection) => {
       if (!videoRef.current) return false;
 
-      if (detection.detection.score < 0.65) {
-        if (isMounted) setStatus("Please ensure your face is well-lit and clear");
+      // Relaxed threshold for faster matching
+      if (detection.detection.score < 0.5) {
         return false;
       }
 
       const faceBox = detection.detection.box;
       const videoCenter = videoRef.current.videoWidth / 2;
       const faceCenter = faceBox.x + (faceBox.width / 2);
-      const maxOffset = videoRef.current.videoWidth * 0.25;
+      const maxOffset = videoRef.current.videoWidth * 0.35; // More lenient
       
       if (Math.abs(faceCenter - videoCenter) > maxOffset) {
-        if (isMounted) setStatus("Please center your face in the frame");
         return false;
       }
 
-      const minSize = videoRef.current.videoWidth * 0.2;
-      const maxSize = videoRef.current.videoWidth * 0.8;
-      if (faceBox.width < minSize) {
-        if (isMounted) setStatus("Please move closer to the camera");
-        return false;
-      }
-      if (faceBox.width > maxSize) {
-        if (isMounted) setStatus("Please move back from the camera");
+      const minSize = videoRef.current.videoWidth * 0.15; // More lenient
+      const maxSize = videoRef.current.videoWidth * 0.85;
+      if (faceBox.width < minSize || faceBox.width > maxSize) {
         return false;
       }
 
@@ -229,6 +237,8 @@ const FaceRecognition = () => {
     };
 
     const startFaceDetection = async () => {
+      // Store function reference for external access
+      startFaceDetectionRef.current = startFaceDetection;
       if (!videoRef.current || !canvasRef.current || !isMounted) return;
     
       const canvas = canvasRef.current;
@@ -241,12 +251,29 @@ const FaceRecognition = () => {
       if (detectionIntervalRef.current) {
         clearInterval(detectionIntervalRef.current);
       }
+      
+      if (drawIntervalRef.current) {
+        clearInterval(drawIntervalRef.current);
+      }
+      
+      // Continuous drawing loop - runs fast to keep ROI visible
+      drawIntervalRef.current = setInterval(() => {
+        if (!isMounted || !canvasRef.current) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Redraw last detections if available
+        if (lastDetectionsRef.current && lastDetectionsRef.current.length > 0) {
+          const resized = faceapi.resizeResults(lastDetectionsRef.current, displaySize);
+          faceapi.draw.drawDetections(canvas, resized);
+        }
+      }, 100);
     
       detectionIntervalRef.current = setInterval(async () => {
         if (!isMounted || isProcessing || !videoRef.current || !canvasRef.current) return;
         
         const now = Date.now();
-        if (now - lastDetectionTimeRef.current < 500) {
+        if (now - lastDetectionTimeRef.current < 4000) {
           return; // Skip if we just processed recently
         }
         
@@ -265,19 +292,16 @@ const FaceRecognition = () => {
             .withFaceLandmarks()
             .withFaceDescriptors();
     
-          const ctx = canvas.getContext('2d');
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          // Store detections for continuous drawing
+          lastDetectionsRef.current = detections;
     
           if (detections.length > 0) {
-            const resizedDetections = faceapi.resizeResults(detections, displaySize);
-            faceapi.draw.drawDetections(canvas, resizedDetections);
             
             if (isMounted) {
               setFaceDetected(true);
-              setStatus("Face detected - Processing...");
             }
             
-            if (detections.length === 1 && referenceFaces.length > 0) {
+            if (detections.length === 1 && referenceFacesRef.current.length > 0) {
               const detection = detections[0];
               
               if (checkFaceQuality(detection)) {
@@ -286,7 +310,7 @@ const FaceRecognition = () => {
                 let bestSim = -1;
                 let bestFace = null;
 
-                for (const face of referenceFaces) {
+                for (const face of referenceFacesRef.current) {
                   const sim = cosineSimilarity(currentDescriptor, face.descriptor);
                   if (sim > bestSim) {
                     bestSim = sim;
@@ -297,15 +321,15 @@ const FaceRecognition = () => {
                   setSimilarityScore(bestSim);
                   setBestMatchImage(bestFace.url);
 
-                  console.log('🔍 Best match:', {
+                  console.log('Best match:', {
                     filename: bestFace.name,
                     similarity: bestSim.toFixed(3),
                     percentage: (bestSim * 100).toFixed(1) + '%'
                   });
 
                   const threshold = 0.5;
-                  if (bestSim >= threshold && !hasVerified) {
-                    console.log('✅ MATCH FOUND!', {
+                  if (bestSim >= threshold && !hasVerifiedRef.current) {
+                    console.log('MATCH FOUND!', {
                         score: bestSim.toFixed(3),
                         name: bestFace.name,
                         url: bestFace.url
@@ -314,22 +338,13 @@ const FaceRecognition = () => {
                     setPopupVisible(true);
                     setHasVerified(true);
                     
-                    // Also clear the detection for a moment to avoid repeated popups
-                    setTimeout(() => {
-                      if (isMounted) {
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        setFaceDetected(false);
-                        setStatus("Verified! Please wait...");
-                      }
-                    }, 1000);
+                    // Stop face detection after verification
+                    if (detectionIntervalRef.current) {
+                      clearInterval(detectionIntervalRef.current);
+                      detectionIntervalRef.current = null;
+                    }
                     
-                    // Stop detection for 5 seconds after verification
-                    setTimeout(() => {
-                      if (isMounted) {
-                        setStatus("Ready for next verification");
-                      }
-                    }, 5000);
-                    
+    
                   } else {
                     console.log('❌ No match - score too low:', bestSim.toFixed(3), 'threshold:', threshold);
                     setMatchStatus(`No match (${(bestSim * 100).toFixed(1)}% < ${(threshold * 100).toFixed(0)}%)`);
@@ -348,7 +363,7 @@ const FaceRecognition = () => {
         } finally {
           if (isMounted) setIsProcessing(false);
         }
-      }, 1000);
+      }, 4000);
     };
 
     const init = async () => {
@@ -380,6 +395,9 @@ const FaceRecognition = () => {
       if (detectionIntervalRef.current) {
         clearInterval(detectionIntervalRef.current);
       }
+      if (drawIntervalRef.current) {
+        clearInterval(drawIntervalRef.current);
+      }
       if (videoRef.current && videoRef.current.srcObject) {
         const tracks = videoRef.current.srcObject.getTracks();
         tracks.forEach(track => track.stop());
@@ -408,7 +426,7 @@ const FaceRecognition = () => {
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div className="text-white text-center p-4">
                 <div className="w-32 h-32 mx-auto mb-4 border-4 border-white border-dashed rounded-full flex items-center justify-center">
-                  <span className="text-4xl">👤</span>
+                  <User size={64} className="text-white" strokeWidth={2} />
                 </div>
                 <p className="text-lg">Position your face here</p>
               </div>
@@ -457,7 +475,16 @@ const FaceRecognition = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
           <div className="bg-green-500 rounded-lg shadow-xl p-8 text-center text-white max-w-sm w-full mx-4 relative">
             <button
-              onClick={() => setPopupVisible(false)}
+              onClick={() => {
+                setPopupVisible(false);
+                setHasVerified(false);
+                setMatchStatus('');
+                setStatus('Ready for face recognition');
+                // Restart face detection
+                if (videoRef.current && canvasRef.current && startFaceDetectionRef.current) {
+                  startFaceDetectionRef.current();
+                }
+              }}
               className="absolute top-2 right-2 text-white hover:text-gray-200 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-green-600 transition"
               aria-label="Close"
             >
