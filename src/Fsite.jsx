@@ -258,26 +258,24 @@ const FaceRecognition = () => {
       
       // Continuous drawing loop - runs fast to keep ROI visible
       drawIntervalRef.current = setInterval(() => {
-        if (!isMounted || !canvasRef.current) return;
+        if (!isMounted || !canvasRef.current || !videoRef.current) return;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         // Redraw last detections if available
         if (lastDetectionsRef.current && lastDetectionsRef.current.length > 0) {
-          const resized = faceapi.resizeResults(lastDetectionsRef.current, displaySize);
+          // Recalculate displaySize for current video dimensions
+          const currentDisplaySize = { 
+            width: videoRef.current.videoWidth, 
+            height: videoRef.current.videoHeight 
+          };
+          const resized = faceapi.resizeResults(lastDetectionsRef.current, currentDisplaySize);
           faceapi.draw.drawDetections(canvas, resized);
         }
       }, 100);
     
       detectionIntervalRef.current = setInterval(async () => {
         if (!isMounted || isProcessing || !videoRef.current || !canvasRef.current) return;
-        
-        const now = Date.now();
-        if (now - lastDetectionTimeRef.current < 4000) {
-          return; // Skip if we just processed recently
-        }
-        
-        lastDetectionTimeRef.current = now;
 
         try {
           setIsProcessing(true);
@@ -294,6 +292,10 @@ const FaceRecognition = () => {
     
           // Store detections for continuous drawing
           lastDetectionsRef.current = detections;
+          
+          // Check if enough time has passed for matching logic
+          const now = Date.now();
+          const shouldMatch = (now - lastDetectionTimeRef.current >= 4000);
     
           if (detections.length > 0) {
             
@@ -301,10 +303,11 @@ const FaceRecognition = () => {
               setFaceDetected(true);
             }
             
-            if (detections.length === 1 && referenceFacesRef.current.length > 0) {
+            if (detections.length === 1 && referenceFacesRef.current.length > 0 && shouldMatch) {
               const detection = detections[0];
               
               if (checkFaceQuality(detection)) {
+                lastDetectionTimeRef.current = now; // Update timestamp for matching throttle
                 const currentDescriptor = Array.from(detection.descriptor);
                 
                 let bestSim = -1;
@@ -363,7 +366,7 @@ const FaceRecognition = () => {
         } finally {
           if (isMounted) setIsProcessing(false);
         }
-      }, 4000);
+      }, 300);
     };
 
     const init = async () => {
@@ -459,14 +462,6 @@ const FaceRecognition = () => {
                 {faceDetected ? 'Yes' : 'No'}
               </span>
             </div>
-            
-            {referenceFiles.length > 0 && referenceFaces.length === 0 && (
-              <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
-                <p className="text-xs text-yellow-700">
-                  Images found but no faces detected. Please upload clear face images.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>
