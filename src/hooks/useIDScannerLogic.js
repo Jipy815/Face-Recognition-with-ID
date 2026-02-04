@@ -9,7 +9,6 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('Initializing...');
   const [detections, setDetections] = useState([]);
-  const [scanProgress, setScanProgress] = useState(0);
   
   const modelRef = useRef(null);
   const ocrWorkerRef = useRef(null);
@@ -196,14 +195,11 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
         console.log('🎉 Found student ID:', studentId);
         stopScanning();
         setStatus('ID detected!');
-        setScanProgress(100);
         onIDDetected(studentId);
         return;
       }
 
       scanCountRef.current++;
-      const progress = Math.min((scanCountRef.current / MAX_ATTEMPTS) * 100, 99);
-      setScanProgress(progress);
       setStatus(`Scanning... (${scanCountRef.current}/${MAX_ATTEMPTS})`);
 
       if (scanCountRef.current >= MAX_ATTEMPTS) {
@@ -222,7 +218,6 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
   const startScanning = useCallback(() => {
     console.log('🔍 Starting ID scan...');
     setStatus('Scanning for student ID...');
-    setScanProgress(0);
     scanCountRef.current = 0;
     isProcessingRef.current = false;
 
@@ -277,7 +272,6 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
     error,
     status,
     detections,
-    scanProgress,
     startScanning,
     stopScanning
   };

@@ -1,8 +1,8 @@
 import React from "react";
-import VerificationApp from "./VerificationApp";
+import FaceRecog from "./FaceRecog";
 
 const App = () => {
-  return <VerificationApp />;
+  return <FaceRecog />;
 };
 
 export default App;

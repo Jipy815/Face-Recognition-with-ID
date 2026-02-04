@@ -226,28 +226,16 @@ const IDScanner = ({ onIDDetected }) => {
         )}
 
         <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-black bg-opacity-70 rounded-lg p-3 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-white text-sm font-medium">{status}</span>
-              {scanProgress > 0 && (
-                <span className="text-white text-sm">{scanProgress}%</span>
-              )}
+          <div className="rounded-lg p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-white text-sm font-medium drop-shadow-lg">{status}</span>
             </div>
-            {scanProgress > 0 && (
-              <div className="w-full bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${scanProgress}%` }}
-                ></div>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <div className="flex items-start gap-3">
-          <div className="text-blue-600 mt-1">💡</div>
           <div className="text-sm text-gray-700">
             <p className="font-semibold mb-1">Tips for best results:</p>
             <ul className="list-disc list-inside space-y-1 text-xs">
