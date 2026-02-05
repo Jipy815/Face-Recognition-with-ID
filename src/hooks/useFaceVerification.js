@@ -20,6 +20,16 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
   const DETECTION_INTERVAL = 300;
   const MATCHING_THROTTLE = 4000;
 
+  const speakVerification = useCallback(() => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance('Verification Successful');
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.8;
+      speechSynthesis.speak(utterance);
+    }
+  }, []);
+
   const initCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -188,6 +198,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
             if (similarity >= MATCH_THRESHOLD && !hasVerifiedRef.current) {
               console.log('✅ FACE VERIFIED!');
               hasVerifiedRef.current = true;
+              speakVerification();
               
               if (detectionIntervalRef.current) {
                 clearInterval(detectionIntervalRef.current);

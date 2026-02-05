@@ -1,15 +1,9 @@
-/**
- * Student Database Service
- * Maps student IDs to their profile data and face reference images
- * This is the central registry for ID → Face verification
- */
-
 const STUDENTS = {
-  '2201521': {
-    id: '2201521',
+  '20002547': {
+    id: '20002547',
     name: 'John Paul',
-    department: 'Computer Science',
-    year: 'Junior',
+    department: 'CCICT',
+    year: '4th year',
     faceImage: '/uploads/mememe.jpg',
     email: 'john.doe@university.edu'
   },
@@ -23,11 +17,6 @@ const STUDENTS = {
   }
 };
 
-/**
- * Get student data by ID
- * @param {string} studentId - 7-digit student ID
- * @returns {Object|null} Student data or null if not found
- */
 export const getStudentByID = (studentId) => {
   const student = STUDENTS[studentId];
   if (!student) {
@@ -37,37 +26,19 @@ export const getStudentByID = (studentId) => {
   return student;
 };
 
-/**
- * Check if student ID exists in database
- * @param {string} studentId - 7-digit student ID
- * @returns {boolean}
- */
 export const isValidStudentID = (studentId) => {
   return studentId in STUDENTS;
 };
 
-/**
- * Get all valid student IDs (for whitelist validation)
- * @returns {string[]} Array of valid student IDs
- */
 export const getAllValidStudentIDs = () => {
   return Object.keys(STUDENTS);
 };
 
-/**
- * Get face reference image path for a student
- * @param {string} studentId - 7-digit student ID
- * @returns {string|null} Image path or null
- */
 export const getFaceImagePath = (studentId) => {
   const student = STUDENTS[studentId];
   return student ? student.faceImage : null;
 };
 
-/**
- * Add new student to database (for admin use)
- * @param {Object} studentData - Student information
- */
 export const addStudent = (studentData) => {
   if (!studentData.id || !studentData.name || !studentData.faceImage) {
     throw new Error('Missing required student data');

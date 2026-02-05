@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import Tesseract from 'tesseract.js';
-import { getAllValidStudentIDs } from '../services/studentDatabase';
+import { getAllValidStudentIDs } from '../services/testDB';
 
 const useIDScannerLogic = (videoRef, onIDDetected) => {
   const [isReady, setIsReady] = useState(false);

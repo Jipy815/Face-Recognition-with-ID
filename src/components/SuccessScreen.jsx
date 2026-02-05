@@ -94,7 +94,7 @@ const SuccessScreen = ({ studentData, verificationResult, onReset }) => {
       </div>
 
       <div className="bg-gray-50 rounded-lg p-4 mb-6">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">Verification Details</h4>
+        <h4 className="text-sm font-semibold text-gray-700 mb-3">Attendance Details</h4>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-gray-600">
@@ -114,15 +114,6 @@ const SuccessScreen = ({ studentData, verificationResult, onReset }) => {
               {formatTime(verificationResult.timestamp)}
             </span>
           </div>
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-gray-600">
-              <CheckCircle2 size={16} />
-              <span>Verification Method</span>
-            </div>
-            <span className="font-medium text-gray-800">
-              ID Scan + Face Recognition
-            </span>
-          </div>
         </div>
       </div>
 
@@ -131,15 +122,8 @@ const SuccessScreen = ({ studentData, verificationResult, onReset }) => {
           onClick={onReset}
           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
         >
-          <User size={20} />
-          Verify Another Student
+          Reset
         </button>
-      </div>
-
-      <div className="mt-4 text-center">
-        <p className="text-xs text-gray-500">
-          This verification has been logged for attendance tracking
-        </p>
       </div>
     </div>
   );

@@ -4,8 +4,8 @@ import { Scan, User, CheckCircle2 } from 'lucide-react';
 const ProgressIndicator = ({ currentStep }) => {
   const steps = [
     { id: 'scanning_id', label: 'Scan ID', icon: Scan },
-    { id: 'verifying_face', label: 'Verify Face', icon: User },
-    { id: 'success', label: 'Complete', icon: CheckCircle2 }
+    { id: 'verifying_face', label: 'Scan Face', icon: User },
+    { id: 'success', label: 'Verified', icon: CheckCircle2 }
   ];
 
   const getStepStatus = (stepId) => {
@@ -23,8 +23,8 @@ const ProgressIndicator = ({ currentStep }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto mb-8">
-      <div className="flex items-center justify-between relative">
+    <div className="flex items-center justify-center gap-8 mb-8">
+      <div className="flex flex-col items-center relative">
         {steps.map((step, index) => {
           const status = getStepStatus(step.id);
           const Icon = step.icon;
@@ -34,18 +34,18 @@ const ProgressIndicator = ({ currentStep }) => {
               <div className="flex flex-col items-center relative z-10">
                 <div
                   className={`
-                    w-16 h-16 rounded-full flex items-center justify-center mb-2 transition-all duration-300
+                    w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all duration-300
                     ${status === 'completed' ? 'bg-green-500 text-white' : ''}
                     ${status === 'active' ? 'bg-blue-600 text-white animate-pulse' : ''}
                     ${status === 'pending' ? 'bg-gray-200 text-gray-400' : ''}
                     ${status === 'error' ? 'bg-red-500 text-white' : ''}
                   `}
                 >
-                  <Icon size={28} strokeWidth={2.5} />
+                  <Icon size={20} strokeWidth={2.5} />
                 </div>
                 <span
                   className={`
-                    text-sm font-semibold
+                    text-xs font-bold
                     ${status === 'completed' ? 'text-green-600' : ''}
                     ${status === 'active' ? 'text-blue-600' : ''}
                     ${status === 'pending' ? 'text-gray-400' : ''}
@@ -57,7 +57,7 @@ const ProgressIndicator = ({ currentStep }) => {
               </div>
 
               {index < steps.length - 1 && (
-                <div className="flex-1 h-1 mx-4 relative" style={{ top: '-20px' }}>
+                <div className="w-1 h-8 my-2 relative">
                   <div className="absolute inset-0 bg-gray-200 rounded"></div>
                   <div
                     className={`
@@ -68,7 +68,7 @@ const ProgressIndicator = ({ currentStep }) => {
                         : 'bg-gray-200'}
                     `}
                     style={{
-                      width: getStepStatus(steps[index + 1].id) === 'active' ? '50%' : '100%'
+                      height: getStepStatus(steps[index + 1].id) === 'active' ? '50%' : '100%'
                     }}
                   ></div>
                 </div>

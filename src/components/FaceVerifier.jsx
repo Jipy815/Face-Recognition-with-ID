@@ -51,7 +51,7 @@ const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
         </div>
       </div>
 
-      <div className="relative aspect-square bg-gray-900 rounded-lg overflow-hidden">
+      <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
         <video
           ref={videoRef}
           autoPlay

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { getStudentByID } from '../services/studentDatabase';
+import { getStudentByID } from '../services/testDB';
 
 const VERIFICATION_STATES = {
   SCANNING_ID: 'scanning_id',
