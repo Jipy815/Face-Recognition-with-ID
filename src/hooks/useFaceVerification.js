@@ -70,7 +70,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
       await faceapi.nets.faceRecognitionNet.loadFromUri(modelPath);
 
       modelsLoadedRef.current = true;
-      console.log('✅ Face models loaded');
+      console.log('Face models loaded');
       return true;
     } catch (err) {
       console.error('Model loading error:', err);
@@ -107,7 +107,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
       }
 
       referenceDescriptorRef.current = Array.from(detection.descriptor);
-      console.log('✅ Reference face loaded');
+      console.log('Reference face loaded');
       return true;
     } catch (err) {
       console.error('Reference loading error:', err);
@@ -196,7 +196,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
             console.log('Match score:', (similarity * 100).toFixed(1) + '%');
 
             if (similarity >= MATCH_THRESHOLD && !hasVerifiedRef.current) {
-              console.log('✅ FACE VERIFIED!');
+              console.log('FACE VERIFIED!');
               hasVerifiedRef.current = true;
               speakVerification();
               

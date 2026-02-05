@@ -44,7 +44,7 @@ export const addStudent = (studentData) => {
     throw new Error('Missing required student data');
   }
   STUDENTS[studentData.id] = studentData;
-  console.log(`✅ Added student: ${studentData.name} (${studentData.id})`);
+  console.log(`Added student: ${studentData.name} (${studentData.id})`);
 };
 
 export default {

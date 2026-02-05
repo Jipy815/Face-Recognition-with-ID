@@ -17,25 +17,25 @@ const useVerificationFlow = () => {
   const [verificationResult, setVerificationResult] = useState(null);
 
   const handleIDDetected = useCallback((detectedId) => {
-    console.log('📋 ID Detected:', detectedId);
+    console.log('ID Detected:', detectedId);
     
     const student = getStudentByID(detectedId);
     
     if (!student) {
-      console.error('❌ Student not found in database');
+      console.error('Student not found in database');
       setCurrentStep(VERIFICATION_STATES.FAILED_ID);
       setStudentId(detectedId);
       return;
     }
 
-    console.log('✅ Student found:', student.name);
+    console.log('Student found:', student.name);
     setStudentId(detectedId);
     setStudentData(student);
     setCurrentStep(VERIFICATION_STATES.VERIFYING_FACE);
   }, []);
 
   const handleFaceVerified = useCallback((result) => {
-    console.log('✅ Face verified:', result);
+    console.log('Face verified:', result);
     setVerificationResult({
       ...result,
       timestamp: new Date().toISOString(),
@@ -45,12 +45,12 @@ const useVerificationFlow = () => {
   }, [studentId]);
 
   const handleFaceFailed = useCallback((reason) => {
-    console.error('❌ Face verification failed:', reason);
+    console.error('Face verification failed:', reason);
     setCurrentStep(VERIFICATION_STATES.FAILED_FACE);
   }, []);
 
   const reset = useCallback(() => {
-    console.log('🔄 Resetting verification flow');
+    console.log('Resetting verification flow');
     setCurrentStep(VERIFICATION_STATES.SCANNING_ID);
     setStudentId(null);
     setStudentData(null);

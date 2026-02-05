@@ -65,7 +65,7 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
         tessedit_char_whitelist: '0123456789',
       });
 
-      console.log('✅ Models loaded');
+      console.log('Models loaded');
       return true;
     } catch (err) {
       console.error('Model loading error:', err);
@@ -93,12 +93,12 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
     // Remove ALL whitespace, newlines, and non-digit characters
     const digitsOnly = text.replace(/\D/g, '');
     
-    console.log('🔢 All digits found:', digitsOnly, `(${digitsOnly.length} digits)`);
+    console.log('All digits found:', digitsOnly, `(${digitsOnly.length} digits)`);
     
     // First try: exact match in the digit string
     for (const validId of validIds) {
       if (digitsOnly.includes(validId)) {
-        console.log('✅ FOUND EXACT MATCH:', validId);
+        console.log('FOUND EXACT MATCH:', validId);
         return validId;
       }
     }
@@ -109,21 +109,21 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
       for (let i = 0; i <= digitsOnly.length - 7; i++) {
         const candidate = digitsOnly.substring(i, i + 7);
         if (validIds.includes(candidate)) {
-          console.log('✅ FOUND IN WINDOW:', candidate);
+          console.log('FOUND IN WINDOW:', candidate);
           return candidate;
         }
       }
       
       // If no exact match, try the first 7 digits
       const firstSeven = digitsOnly.substring(0, 7);
-      console.log('🔍 Checking first 7 digits:', firstSeven);
+      console.log('Checking first 7 digits:', firstSeven);
       if (validIds.includes(firstSeven)) {
-        console.log('✅ MATCHED FIRST 7:', firstSeven);
+        console.log('MATCHED FIRST 7:', firstSeven);
         return firstSeven;
       }
     }
     
-    console.log('❌ No valid ID found in:', digitsOnly);
+    console.log('No valid ID found in:', digitsOnly);
     return null;
   };
 
@@ -185,14 +185,14 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
       const rawText = data.text;
 
       console.log('═══════════════════════════════════');
-      console.log('📝 RAW OCR TEXT:');
+      console.log('RAW OCR TEXT:');
       console.log(rawText);
       console.log('═══════════════════════════════════');
 
       const studentId = findValidStudentId(rawText);
 
       if (studentId) {
-        console.log('🎉 Found student ID:', studentId);
+        console.log('Found student ID:', studentId);
         stopScanning();
         setStatus('ID detected!');
         onIDDetected(studentId);
@@ -216,7 +216,7 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
   }, [videoRef, onIDDetected]);
 
   const startScanning = useCallback(() => {
-    console.log('🔍 Starting ID scan...');
+    console.log('Starting ID scan...');
     setStatus('Scanning for student ID...');
     scanCountRef.current = 0;
     isProcessingRef.current = false;
