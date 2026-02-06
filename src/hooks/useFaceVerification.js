@@ -16,7 +16,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
   const hasVerifiedRef = useRef(false);
   const lastDetectionTimeRef = useRef(0);
 
-  const MATCH_THRESHOLD = 0.5;
+  const MATCH_THRESHOLD = 0.8;
   const DETECTION_INTERVAL = 300;
   const MATCHING_THROTTLE = 4000;
 

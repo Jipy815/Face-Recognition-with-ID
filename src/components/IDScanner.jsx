@@ -157,10 +157,10 @@ const IDScanner = ({ onIDDetected }) => {
         }
         
         // Text hint
-        ctx.font = '14px Arial';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.font = '16px Arial';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.textAlign = 'center';
-        ctx.fillText('Position horizontal ID card here', canvas.width / 2, guideY - 12);
+        ctx.fillText('Position your ID here', canvas.width / 2, guideY - 15);
       }
       
       if (isScanning) {
@@ -188,7 +188,7 @@ const IDScanner = ({ onIDDetected }) => {
           <span className="text-sm text-gray-500">1/2</span>
         </div>
         <p className="text-gray-600">
-          Position your student ID card horizontally in the camera view
+          Position your student ID card in the camera view
         </p>
       </div>
 
@@ -239,7 +239,7 @@ const IDScanner = ({ onIDDetected }) => {
           <div className="text-sm text-gray-700">
             <p className="font-semibold mb-1">Tips for best results:</p>
             <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>Hold ID card horizontally (landscape orientation)</li>
+              <li>Hold ID card steady in the frame</li>
               <li>Ensure good lighting on the card</li>
               <li>Keep the card steady and in focus</li>
               <li>Position the student number clearly visible</li>

@@ -18,7 +18,6 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
   const streamRef = useRef(null);
 
   const SCAN_INTERVAL = 1000;
-  const MAX_ATTEMPTS = 60;
 
   const initCamera = useCallback(async () => {
     try {
@@ -177,11 +176,42 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
     setStatus('Scanning for ID card...');
 
     try {
-      const predictions = await modelRef.current.detect(video, 10, 0.25);
+      const predictions = await modelRef.current.detect(video, 1, 0.25);
       setDetections(predictions);
 
-      const fullFrame = captureFullFrame(video);
-      const { data } = await ocrWorkerRef.current.recognize(fullFrame);
+      let ocrCanvas;
+      
+      // ROI
+      if (predictions.length > 0 && predictions[0].class === 'person') {
+        
+        const detection = predictions[0];
+        const [x, y, width, height] = detection.bbox;
+        
+        
+        ocrCanvas = document.createElement('canvas');
+        const ctx = ocrCanvas.getContext('2d');
+        
+        ocrCanvas.width = width;
+        ocrCanvas.height = height;
+        
+  
+        ctx.drawImage(
+          video,
+          x, y, width, height, 
+          0, 0, width, height  
+        );
+        
+       
+        preprocessImage(ctx, width, height);
+        
+        console.log('Using detected ID region:', { x, y, width, height });
+      } else {
+        
+        ocrCanvas = captureFullFrame(video);
+        console.log('No ID detected, using full frame');
+      }
+      
+      const { data } = await ocrWorkerRef.current.recognize(ocrCanvas);
       const rawText = data.text;
 
       console.log('═══════════════════════════════════');
@@ -200,13 +230,7 @@ const useIDScannerLogic = (videoRef, onIDDetected) => {
       }
 
       scanCountRef.current++;
-      setStatus(`Scanning... (${scanCountRef.current}/${MAX_ATTEMPTS})`);
-
-      if (scanCountRef.current >= MAX_ATTEMPTS) {
-        stopScanning();
-        setError('Could not detect student ID. Please try again.');
-        setStatus('Scan timeout');
-      }
+      setStatus('Scanning for student ID...');
 
     } catch (err) {
       console.error('Scan error:', err);
