@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { User, CheckCircle2, XCircle } from 'lucide-react';
 import useFaceVerification from '../hooks/useFaceVerification';
+import * as faceapi from '@vladmandic/face-api';
 
 const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
   const videoRef = useRef(null);
@@ -12,8 +13,36 @@ const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
     status,
     faceDetected,
     similarityScore,
-    isVerifying
+    isVerifying,
+    detections
   } = useFaceVerification(videoRef, studentData.faceImage, onVerified, onFailed);
+
+  // Use face-api's built-in drawing utilities for ROI visualization
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    
+    if (!canvas || !video || !isReady) return;
+
+    const drawDetections = () => {
+      const displaySize = { width: video.videoWidth, height: video.videoHeight };
+      faceapi.matchDimensions(canvas, displaySize);
+
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (detections && detections.length > 0) {
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        
+        // Draw face detection boxes with face-api's built-in drawing
+        faceapi.draw.drawDetections(canvas, resizedDetections);
+      }
+
+      requestAnimationFrame(drawDetections);
+    };
+
+    drawDetections();
+  }, [isReady, detections]);
 
   return (
     <div className="bg-white rounded-xl shadow-2xl p-6">
@@ -86,11 +115,11 @@ const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
         )}
 
         <div className="absolute bottom-4 left-4 right-4">
-          <div className="bg-black bg-opacity-70 rounded-lg p-3 backdrop-blur-sm">
+          <div className="rounded-lg p-3">
             <div className="flex items-center justify-between">
-              <span className="text-white text-sm font-medium">{status}</span>
+              <span className="text-white text-sm font-medium drop-shadow-lg">{status}</span>
               {similarityScore !== null && (
-                <span className="text-white text-sm font-bold">
+                <span className="text-white text-sm font-bold drop-shadow-lg">
                   {(similarityScore * 100).toFixed(1)}%
                 </span>
               )}
@@ -98,8 +127,8 @@ const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
             
             {faceDetected && (
               <div className="mt-2 flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-green-400" />
-                <span className="text-green-400 text-xs">Face detected</span>
+                <CheckCircle2 size={16} className="text-green-400 drop-shadow-lg" />
+                <span className="text-green-400 text-xs drop-shadow-lg">Face detected</span>
               </div>
             )}
           </div>

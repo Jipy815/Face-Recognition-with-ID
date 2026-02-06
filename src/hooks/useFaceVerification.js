@@ -8,6 +8,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
   const [faceDetected, setFaceDetected] = useState(false);
   const [similarityScore, setSimilarityScore] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [detections, setDetections] = useState([]);
 
   const modelsLoadedRef = useRef(false);
   const detectionIntervalRef = useRef(null);
@@ -16,7 +17,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
   const hasVerifiedRef = useRef(false);
   const lastDetectionTimeRef = useRef(0);
 
-  const MATCH_THRESHOLD = 0.8;
+  const MATCH_THRESHOLD = 0.9;
   const DETECTION_INTERVAL = 300;
   const MATCHING_THROTTLE = 4000;
 
@@ -175,10 +176,12 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
 
         if (detections.length === 0) {
           setFaceDetected(false);
+          setDetections([]);
           setStatus('Please look at the camera');
           setSimilarityScore(null);
         } else if (detections.length === 1) {
           setFaceDetected(true);
+          setDetections(detections);
           const detection = detections[0];
 
           if (checkFaceQuality(detection) && shouldMatch) {
@@ -219,6 +222,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
           }
         } else {
           setFaceDetected(false);
+          setDetections([]);
           setStatus('Multiple faces detected. Only one person allowed.');
         }
       } catch (err) {
@@ -273,7 +277,8 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
     status,
     faceDetected,
     similarityScore,
-    isVerifying
+    isVerifying,
+    detections
   };
 };
 
