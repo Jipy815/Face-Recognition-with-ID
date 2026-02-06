@@ -36,7 +36,7 @@ const ProgressIndicator = ({ currentStep }) => {
                   className={`
                     w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all duration-300
                     ${status === 'completed' ? 'bg-green-500 text-white' : ''}
-                    ${status === 'active' ? 'bg-blue-600 text-white animate-pulse' : ''}
+                    ${status === 'active' ? 'bg-green-600 text-white animate-pulse' : ''}
                     ${status === 'pending' ? 'bg-gray-200 text-gray-400' : ''}
                     ${status === 'error' ? 'bg-red-500 text-white' : ''}
                   `}
@@ -47,7 +47,7 @@ const ProgressIndicator = ({ currentStep }) => {
                   className={`
                     text-xs font-bold
                     ${status === 'completed' ? 'text-green-600' : ''}
-                    ${status === 'active' ? 'text-blue-600' : ''}
+                    ${status === 'active' ? 'text-green-600' : ''}
                     ${status === 'pending' ? 'text-gray-400' : ''}
                     ${status === 'error' ? 'text-red-600' : ''}
                   `}
@@ -58,17 +58,17 @@ const ProgressIndicator = ({ currentStep }) => {
 
               {index < steps.length - 1 && (
                 <div className="w-1 h-8 my-2 relative">
-                  <div className="absolute inset-0 bg-gray-200 rounded"></div>
                   <div
                     className={`
-                      absolute inset-0 rounded transition-all duration-500
+                      absolute left-0 top-0 w-full rounded transition-all duration-500
                       ${getStepStatus(steps[index + 1].id) === 'completed' || 
                         getStepStatus(steps[index + 1].id) === 'active' 
                         ? 'bg-green-500' 
                         : 'bg-gray-200'}
                     `}
                     style={{
-                      height: getStepStatus(steps[index + 1].id) === 'active' ? '50%' : '100%'
+                      height: (getStepStatus(steps[index + 1].id) === 'completed' || 
+                               getStepStatus(steps[index + 1].id) === 'active') ? '100%' : '0%'
                     }}
                   ></div>
                 </div>
