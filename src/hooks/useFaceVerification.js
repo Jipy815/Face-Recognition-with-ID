@@ -37,12 +37,15 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
   const referenceDescriptorRef = useRef(null);        // 128-dimensional face descriptor from reference photo
   const streamRef = useRef(null);                     // mediastream for camera cleanup
   const hasVerifiedRef = useRef(false);               // prevents duplicate verification callbacks
+  const hasFailedRef = useRef(false);                  // prevents duplicate failure callbacks
+  const failedAttemptsRef = useRef(0);                 // consecutive failed match attempts counter
   const lastDetectionTimeRef = useRef(Date.now());    // timestamp of last match attempt (for throttling)
 
   // --- configuration ---
   const MATCH_THRESHOLD = 0.58;     // minimum similarity score to verify (0-1, higher = stricter)
   const DETECTION_INTERVAL = 1000;  // how often to run face detection (ms)
   const MATCHING_THROTTLE = 6000;   // minimum time between match attempts (ms) to avoid rapid re-checks
+  const MAX_FAILED_ATTEMPTS = 5;    // failed attempts 
 
   /**
    * announces "verification successful" via web speech api
@@ -51,6 +54,20 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
   const speakVerification = useCallback(() => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance('Verification Successful');
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.8;
+      speechSynthesis.speak(utterance);
+    }
+  }, []);
+
+  /**
+   * announces "verification failed" via web speech api
+   * called once when face verification fails after max attempts
+   */
+  const speakFailure = useCallback(() => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance('Verification Failed. Face does not match.');
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
       utterance.volume = 0.8;
@@ -241,10 +258,12 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
 
     setStatus('Looking for face...');
     hasVerifiedRef.current = false;
+    hasFailedRef.current = false;
+    failedAttemptsRef.current = 0;
 
     // run face detection at regular intervals
     detectionIntervalRef.current = setInterval(async () => {
-      if (!videoRef.current || hasVerifiedRef.current) return; // skip if unmounted or already verified
+      if (!videoRef.current || hasVerifiedRef.current || hasFailedRef.current) return; // skip if unmounted, already verified, or already failed
 
       try {
         // detect all faces in current video frame with landmarks and descriptors
@@ -295,6 +314,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
               // match found - face verified successfully
               console.log('FACE VERIFIED!');
               hasVerifiedRef.current = true;  // prevent duplicate callbacks
+              failedAttemptsRef.current = 0;  // reset failed counter
               speakVerification();             // audio announcement
               
               // stop detection loop
@@ -310,7 +330,27 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
               });
             } else if (similarity < MATCH_THRESHOLD) {
               // no match - face doesn't match reference
-              setStatus(`No match (${(similarity * 100).toFixed(1)}%)`);
+              failedAttemptsRef.current++;
+              const attemptsLeft = MAX_FAILED_ATTEMPTS - failedAttemptsRef.current;
+              console.log(`Failed attempt ${failedAttemptsRef.current}/${MAX_FAILED_ATTEMPTS}`);
+
+              if (failedAttemptsRef.current >= MAX_FAILED_ATTEMPTS && !hasFailedRef.current) {
+                // max failed attempts reached - trigger failure
+                console.log('FACE VERIFICATION FAILED - max attempts reached');
+                hasFailedRef.current = true;
+                speakFailure();
+
+                // stop detection loop
+                if (detectionIntervalRef.current) {
+                  clearInterval(detectionIntervalRef.current);
+                  detectionIntervalRef.current = null;
+                }
+
+                // notify parent component of failure
+                onFailed('Face does not match the registered student');
+              } else {
+                setStatus(`No match (${(similarity * 100).toFixed(1)}%) - attempt ${failedAttemptsRef.current}/${MAX_FAILED_ATTEMPTS}`);
+              }
             }
 
             setIsVerifying(false);
@@ -327,7 +367,7 @@ const useFaceVerification = (videoRef, referenceFaceImage, onVerified, onFailed)
         console.error('Detection error:', err);
       }
     }, DETECTION_INTERVAL);
-  }, [videoRef, onVerified]);
+  }, [videoRef, onVerified, onFailed]);
 
   /** stops the face detection interval loop */
   const stopDetection = useCallback(() => {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 
 /**
@@ -22,6 +22,12 @@ import { XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
  * @param {Function} onRetry - callback to reset and retry the verification flow
  */
 const FailureScreen = ({ failureType, studentId, onRetry }) => {
+  // play failure sound effect on mount (silently fails if audio not available)
+  useEffect(() => {
+    const audio = new Audio('/failure.mp3');
+    audio.play().catch(() => {});
+  }, []);
+
   /** returns failure-specific ui content based on the failure type */
   const getFailureInfo = () => {
     switch (failureType) {
