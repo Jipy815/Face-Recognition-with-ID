@@ -3,9 +3,26 @@ import { User, CheckCircle2, XCircle } from 'lucide-react';
 import useFaceVerification from '../hooks/useFaceVerification';
 import * as faceapi from '@vladmandic/face-api';
 
+/**
+ * faceverifier component (step 2)
+ * 
+ * renders the face verification interface with:
+ * - live video feed from front-facing camera (4:3 aspect ratio)
+ * - canvas overlay for face-api roi (region of interest) visualization
+ * - student info card showing detected student details
+ * - real-time status messages and similarity score
+ * - loading spinner while models initialize
+ * - error display for camera/model failures
+ * - tips section for best verification results
+ * 
+ * @param {string} studentId - the detected student id from step 1
+ * @param {Object} studentData - full student record { name, department, year, faceImage, email }
+ * @param {Function} onVerified - callback when face is verified (receives { similarity, confidence })
+ * @param {Function} onFailed - callback when face verification fails
+ */
 const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const videoRef = useRef(null);   // reference to the <video> element for camera feed
+  const canvasRef = useRef(null);  // reference to the <canvas> overlay for roi drawing
 
   const {
     isReady,
@@ -14,35 +31,68 @@ const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
     faceDetected,
     similarityScore,
     isVerifying,
-    detections
+    detectionsRef
   } = useFaceVerification(videoRef, studentData.faceImage, onVerified, onFailed);
 
-  // Use face-api's built-in drawing utilities for ROI visualization
+  /**
+   * canvas drawing effect - renders face-api roi overlay
+   * 
+   * uses requestanimationframe for smooth 60fps drawing.
+   * reads face detection data from detectionsref (shared ref from hook)
+   * to avoid react state re-render overhead.
+   * 
+   * when a face is detected, draws face-api's built-in blue detection box
+   * with confidence score around the detected face.
+   */
   useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
     
     if (!canvas || !video || !isReady) return;
 
-    const drawDetections = () => {
-      const displaySize = { width: video.videoWidth, height: video.videoHeight };
-      faceapi.matchDimensions(canvas, displaySize);
+    let animationId;
+
+    const draw = () => {
+      // wait for video to have valid dimensions
+      if (!video.videoWidth || !video.videoHeight) {
+        animationId = requestAnimationFrame(draw);
+        return;
+      }
+
+      // match canvas to displayed video size
+      const rect = video.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
 
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (detections && detections.length > 0) {
-        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+      // read latest detections from shared ref (updated by usefaceverification hook)
+      const currentDetections = detectionsRef.current;
+
+      if (currentDetections && currentDetections.length > 0) {
+        // use face-api's built-in drawing with native video dimensions
+        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
         
-        // Draw face detection boxes with face-api's built-in drawing
+        // resize detections to match canvas and draw blue roi boxes
+        const resizedDetections = faceapi.resizeResults(currentDetections, displaySize);
         faceapi.draw.drawDetections(canvas, resizedDetections);
       }
 
-      requestAnimationFrame(drawDetections);
+      animationId = requestAnimationFrame(draw);
     };
 
-    drawDetections();
-  }, [isReady, detections]);
+    draw();
+
+    // cleanup: cancel animation frame on unmount
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [isReady]); // only depends on isReady - detections read from ref, not state
 
   return (
     <div className="bg-white rounded-xl shadow-2xl p-6">
@@ -80,13 +130,13 @@ const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
         </div>
       </div>
 
-      <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
+      <div className="relative bg-gray-900 rounded-lg overflow-hidden" style={{ aspectRatio: '4/3' }}>
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
         
         <canvas
@@ -94,16 +144,6 @@ const FaceVerifier = ({ studentId, studentData, onVerified, onFailed }) => {
           className="absolute inset-0 w-full h-full pointer-events-none"
         />
 
-        {!faceDetected && isReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="text-white text-center p-4">
-              <div className="w-32 h-32 mx-auto mb-4 border-4 border-white border-dashed rounded-full flex items-center justify-center animate-pulse">
-                <User size={64} className="text-white" strokeWidth={2} />
-              </div>
-              <p className="text-lg font-semibold">Position your face here</p>
-            </div>
-          </div>
-        )}
 
         {!isReady && !error && (
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70">

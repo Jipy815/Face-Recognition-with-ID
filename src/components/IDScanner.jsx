@@ -2,11 +2,26 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Camera, Scan } from 'lucide-react';
 import useIDScannerLogic from '../hooks/useIDScannerLogic';
 
+/**
+ * idscanner component (step 1)
+ * 
+ * renders the id card scanning interface with:
+ * - live video feed from rear-facing camera (16:9 aspect ratio)
+ * - canvas overlay with roi visualization:
+ *   - when object detected: cyan bounding box with corner accents
+ *   - when no object: dashed guide box with corner brackets and scan line animation
+ * - real-time status messages
+ * - loading spinner while models initialize
+ * - error display for camera failures
+ * - tips section for best scanning results
+ * 
+ * @param {Function} onIDDetected - callback when a valid student id is found
+ */
 const IDScanner = ({ onIDDetected }) => {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
-  const scanLineY = useRef(0);
+  const videoRef = useRef(null);      // reference to the <video> element for camera feed
+  const canvasRef = useRef(null);     // reference to the <canvas> overlay for roi drawing
+  const animationRef = useRef(null);  // requestanimationframe id for cleanup
+  const scanLineY = useRef(0);        // current y position of the scanning line animation
   
   const {
     isReady,
@@ -17,13 +32,20 @@ const IDScanner = ({ onIDDetected }) => {
     startScanning
   } = useIDScannerLogic(videoRef, onIDDetected);
 
+  // auto-start scanning when camera and models are ready
   useEffect(() => {
     if (isReady) {
       startScanning();
     }
   }, [isReady, startScanning]);
 
-  // Draw ROI overlay on canvas
+  /**
+   * canvas drawing effect - renders roi overlay
+   * 
+   * two modes:
+   * 1. object detected: draw cyan bounding box with corner accents around detected object
+   * 2. no object: draw dashed guide box with corner brackets, scan line animation, and text hint
+   */
   useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -34,6 +56,7 @@ const IDScanner = ({ onIDDetected }) => {
       const ctx = canvas.getContext('2d');
       const rect = video.getBoundingClientRect();
       
+      // match canvas to displayed video size
       canvas.width = rect.width;
       canvas.height = rect.height;
       
@@ -41,50 +64,51 @@ const IDScanner = ({ onIDDetected }) => {
       
       const isScanning = scanProgress > 0 && scanProgress < 100;
       
-      // Draw detection boxes if any
+      // mode 1: draw bounding boxes around detected objects (coco-ssd results)
       if (detections && detections.length > 0) {
         const scaleX = rect.width / (video.videoWidth || 1);
         const scaleY = rect.height / (video.videoHeight || 1);
         
         detections.forEach((detection) => {
+          // scale detection coordinates from native video to displayed size
           const [x, y, width, height] = detection.bbox;
           const dx = x * scaleX;
           const dy = y * scaleY;
           const dw = width * scaleX;
           const dh = height * scaleY;
           
-          // Draw box
+          // draw cyan bounding box around detected object
           ctx.strokeStyle = '#00bcd4';
           ctx.lineWidth = 3;
           ctx.strokeRect(dx, dy, dw, dh);
           
-          // Corner accents
+          // draw corner accent brackets for visual emphasis
           const cornerLen = 20;
           ctx.lineWidth = 4;
           ctx.lineCap = 'round';
           
-          // Top-left
+          // top-left
           ctx.beginPath();
           ctx.moveTo(dx, dy + cornerLen);
           ctx.lineTo(dx, dy);
           ctx.lineTo(dx + cornerLen, dy);
           ctx.stroke();
           
-          // Top-right
+          // top-right
           ctx.beginPath();
           ctx.moveTo(dx + dw - cornerLen, dy);
           ctx.lineTo(dx + dw, dy);
           ctx.lineTo(dx + dw, dy + cornerLen);
           ctx.stroke();
           
-          // Bottom-left
+          // bottom-left
           ctx.beginPath();
           ctx.moveTo(dx, dy + dh - cornerLen);
           ctx.lineTo(dx, dy + dh);
           ctx.lineTo(dx + cornerLen, dy + dh);
           ctx.stroke();
           
-          // Bottom-right
+          // bottom-right
           ctx.beginPath();
           ctx.moveTo(dx + dw - cornerLen, dy + dh);
           ctx.lineTo(dx + dw, dy + dh);
@@ -92,55 +116,56 @@ const IDScanner = ({ onIDDetected }) => {
           ctx.stroke();
         });
       } else {
-        // Draw guide box for landscape ID card
+        // mode 2: no detection - draw guide box for id card placement
+        // guide box sized for landscape id card (85% width, 40% height)
         const guideWidth = canvas.width * 0.85;
         const guideHeight = canvas.height * 0.40;
         const guideX = (canvas.width - guideWidth) / 2;
         const guideY = (canvas.height - guideHeight) / 2;
         
-        // Dashed guide
+        // dashed guide
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
         ctx.lineWidth = 2;
         ctx.setLineDash([8, 8]);
         ctx.strokeRect(guideX, guideY, guideWidth, guideHeight);
         ctx.setLineDash([]);
         
-        // Corner brackets
+        // corner brackets
         const cornerLen = 30;
         ctx.strokeStyle = isScanning ? '#00bcd4' : 'rgba(255,255,255,0.6)';
         ctx.lineWidth = 3;
         
-        // Top-left
+        // top-left
         ctx.beginPath();
         ctx.moveTo(guideX, guideY + cornerLen);
         ctx.lineTo(guideX, guideY);
         ctx.lineTo(guideX + cornerLen, guideY);
         ctx.stroke();
         
-        // Top-right
+        // top-right
         ctx.beginPath();
         ctx.moveTo(guideX + guideWidth - cornerLen, guideY);
         ctx.lineTo(guideX + guideWidth, guideY);
         ctx.lineTo(guideX + guideWidth, guideY + cornerLen);
         ctx.stroke();
         
-        // Bottom-left
+        // bottom-left
         ctx.beginPath();
         ctx.moveTo(guideX, guideY + guideHeight - cornerLen);
         ctx.lineTo(guideX, guideY + guideHeight);
         ctx.lineTo(guideX + cornerLen, guideY + guideHeight);
         ctx.stroke();
         
-        // Bottom-right
+        // bottom-right
         ctx.beginPath();
         ctx.moveTo(guideX + guideWidth - cornerLen, guideY + guideHeight);
         ctx.lineTo(guideX + guideWidth, guideY + guideHeight);
         ctx.lineTo(guideX + guideWidth, guideY + guideHeight - cornerLen);
         ctx.stroke();
         
-        // Scan line animation
+        // animated scan line that moves vertically through the guide box
         if (isScanning) {
-          scanLineY.current = (scanLineY.current + 3) % guideHeight;
+          scanLineY.current = (scanLineY.current + 3) % guideHeight; // move 3px per frame
           
           const gradient = ctx.createLinearGradient(guideX, 0, guideX + guideWidth, 0);
           gradient.addColorStop(0, 'transparent');
@@ -156,7 +181,7 @@ const IDScanner = ({ onIDDetected }) => {
           ctx.stroke();
         }
         
-        // Text hint
+        // text hint
         ctx.font = '16px Arial';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.textAlign = 'center';

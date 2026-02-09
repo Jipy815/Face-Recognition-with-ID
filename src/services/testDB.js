@@ -1,3 +1,17 @@
+/**
+ * student database (mock/test)
+ * 
+ * in-memory student records used for id verification.
+ * each student has:
+ *   - id: unique student id number (string, used as key)
+ *   - name: full name
+ *   - department: academic department
+ *   - year: year level
+ *   - faceImage: path to reference face photo (stored in /public/uploads/)
+ *   - email: student email address
+ * 
+ * in production, this would be replaced with a real database (e.g., mongodb, postgresql).
+ */
 const STUDENTS = {
   '20002547': {
     id: '20002547',
@@ -9,14 +23,15 @@ const STUDENTS = {
   },
   '2201547': {
     id: '2201547',
-    name: 'Jane Smith',
+    name: 'Kevin Durant',
     department: 'Engineering',
     year: 'Senior',
     faceImage: '/uploads/jungkok.jpg',
-    email: 'jane.smith@university.edu'
+    email: 'kevin@university.edu'
   }
 };
 
+/** retrieves a student record by id. returns null if not found. */
 export const getStudentByID = (studentId) => {
   const student = STUDENTS[studentId];
   if (!student) {
@@ -26,19 +41,23 @@ export const getStudentByID = (studentId) => {
   return student;
 };
 
+/** checks if a student id exists in the database */
 export const isValidStudentID = (studentId) => {
   return studentId in STUDENTS;
 };
 
+/** returns an array of all registered student id strings */
 export const getAllValidStudentIDs = () => {
   return Object.keys(STUDENTS);
 };
 
+/** returns the face image path for a student, or null if not found */
 export const getFaceImagePath = (studentId) => {
   const student = STUDENTS[studentId];
   return student ? student.faceImage : null;
 };
 
+/** adds a new student to the database. requires id, name, and faceimage. */
 export const addStudent = (studentData) => {
   if (!studentData.id || !studentData.name || !studentData.faceImage) {
     throw new Error('Missing required student data');

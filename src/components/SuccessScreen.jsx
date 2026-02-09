@@ -1,12 +1,31 @@
 import React, { useEffect } from 'react';
 import { CheckCircle2, User, Calendar, Clock, Award } from 'lucide-react';
 
+/**
+ * successscreen component
+ * 
+ * displayed after successful face verification.
+ * shows:
+ * - animated success icon with bounce effect
+ * - student photo, name, department, and year
+ * - match score percentage and verification status
+ * - attendance details (date and time of verification)
+ * - reset button to start a new verification
+ * 
+ * plays success.mp3 audio on mount.
+ * 
+ * @param {Object} studentData - student record { id, name, department, year, faceImage }
+ * @param {Object} verificationResult - { similarity, confidence, timestamp, studentId }
+ * @param {Function} onReset - callback to reset the verification flow
+ */
 const SuccessScreen = ({ studentData, verificationResult, onReset }) => {
+  // play success sound effect on mount (silently fails if audio not available)
   useEffect(() => {
     const audio = new Audio('/success.mp3');
     audio.play().catch(() => {});
   }, []);
 
+  /** formats iso timestamp to readable time (e.g., "02:30:45 pm") */
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', { 
@@ -16,6 +35,7 @@ const SuccessScreen = ({ studentData, verificationResult, onReset }) => {
     });
   };
 
+  /** formats iso timestamp to readable date (e.g., "monday, february 9, 2026") */
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', { 

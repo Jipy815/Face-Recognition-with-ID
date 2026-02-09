@@ -6,16 +6,33 @@ import FailureScreen from './components/FailureScreen';
 import ProgressIndicator from './components/ProgressIndicator';
 import useVerificationFlow from './hooks/useVerificationFlow';
 
+/**
+ * verificationapp - main orchestrator component
+ * 
+ * root component that manages the entire verification flow.
+ * uses the useverificationflow hook as a state machine to determine
+ * which step/screen to render.
+ * 
+ * layout: horizontal flex with progressindicator on the left
+ * and the active step component on the right (max-w-2xl).
+ * 
+ * flow:
+ *   1. scanning_id     -> idscanner component
+ *   2. verifying_face   -> faceverifier component
+ *   3. success          -> successscreen component
+ *   4. failed_*         -> failurescreen component (with retry)
+ */
 const VerificationApp = () => {
+  // state machine hook - manages step transitions and data flow
   const {
-    currentStep,
-    studentId,
-    studentData,
-    verificationResult,
-    handleIDDetected,
-    handleFaceVerified,
-    handleFaceFailed,
-    reset
+    currentStep,          // current verification state (scanning_id, verifying_face, success, failed_*)
+    studentId,            // detected student id string
+    studentData,          // full student record from database
+    verificationResult,   // face match results { similarity, confidence, timestamp }
+    handleIDDetected,     // callback: id scanned -> look up student -> next step
+    handleFaceVerified,   // callback: face matched -> success screen
+    handleFaceFailed,     // callback: face failed -> failure screen
+    reset                 // callback: reset everything to step 1
   } = useVerificationFlow();
 
   return (

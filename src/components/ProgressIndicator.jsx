@@ -1,25 +1,48 @@
 import React from 'react';
 import { Scan, User, CheckCircle2 } from 'lucide-react';
 
+/**
+ * progressindicator component
+ * 
+ * displays a vertical step indicator showing the verification progress.
+ * three steps: scan id -> scan face -> verified
+ * 
+ * step statuses:
+ *   - completed: green background, white icon (step is done)
+ *   - active: green background with pulse animation (current step)
+ *   - pending: gray background (not yet reached)
+ *   - error: red background (any failed_* state)
+ * 
+ * connecting lines between steps fill green when the next step is active/completed.
+ * 
+ * @param {string} currentStep - current verification state from useverificationflow
+ */
 const ProgressIndicator = ({ currentStep }) => {
+  // define the three verification steps with their icons
   const steps = [
-    { id: 'scanning_id', label: 'Scan ID', icon: Scan },
-    { id: 'verifying_face', label: 'Scan Face', icon: User },
-    { id: 'success', label: 'Verified', icon: CheckCircle2 }
+    { id: 'scanning_id', label: 'Scan ID', icon: Scan },          // step 1
+    { id: 'verifying_face', label: 'Scan Face', icon: User },     // step 2
+    { id: 'success', label: 'Verified', icon: CheckCircle2 }      // step 3 (final)
   ];
 
+  /**
+   * determines the visual status of a step based on the current flow state
+   * @param {string} stepId - the step to check
+   * @returns {'completed'|'active'|'pending'|'error'} visual status
+   */
   const getStepStatus = (stepId) => {
     const stepOrder = ['scanning_id', 'verifying_face', 'success'];
     const currentIndex = stepOrder.indexOf(currentStep);
     const stepIndex = stepOrder.indexOf(stepId);
 
+    // any failure state turns all steps red
     if (currentStep.startsWith('failed')) {
       return 'error';
     }
 
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'active';
-    return 'pending';
+    if (stepIndex < currentIndex) return 'completed';  // past step
+    if (stepIndex === currentIndex) return 'active';    // current step
+    return 'pending';                                    // future step
   };
 
   return (

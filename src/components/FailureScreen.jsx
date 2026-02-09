@@ -1,7 +1,28 @@
 import React from 'react';
 import { XCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 
+/**
+ * failurescreen component
+ * 
+ * displayed when any step of the verification process fails.
+ * handles three failure types:
+ *   - failed_id: student id not found in database (yellow warning)
+ *   - failed_face: face doesn't match reference photo (red error)
+ *   - failed_mismatch: id and face belong to different people (red error)
+ * 
+ * each failure type shows:
+ * - appropriate icon (warning triangle or x circle)
+ * - descriptive title and message
+ * - context-specific suggestions for resolution
+ * - the attempted student id (if available)
+ * - retry button to restart the verification flow
+ * 
+ * @param {string} failureType - one of 'failed_id', 'failed_face', 'failed_mismatch'
+ * @param {string} studentId - the student id that was attempted (may be null)
+ * @param {Function} onRetry - callback to reset and retry the verification flow
+ */
 const FailureScreen = ({ failureType, studentId, onRetry }) => {
+  /** returns failure-specific ui content based on the failure type */
   const getFailureInfo = () => {
     switch (failureType) {
       case 'failed_id':
